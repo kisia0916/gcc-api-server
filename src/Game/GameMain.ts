@@ -43,13 +43,17 @@ app.post("/set-all-game",async(c)=>{
     }
 })
 
-app.get("/get-all-view-counter",async(c)=>{
+app.post("/get-all-view-counter",async(c)=>{
     try{
-        const gameData = await LauncherGame.find()
-        const returnData:{id:string,title:string,genre:string,counter:number}[] = gameData.map((i:gameInterfaceMain)=>{
-            return {id:i.id,title:i.title,counter:i.counter,genre:i.genre}
-        })
-        return c.json({data:returnData})
+        const bodyData:{genres:string[]} = await c.req.json<{genres:string[]}>()
+        const resViewList = await Promise.all(bodyData.genres.map(async(i)=>{
+            const genreGame = await LauncherGame.find({genre:i as string})
+            const viewData = genreGame.map((k:gameInterfaceMain)=>{
+                return {title:k.title,counter:k.counter}
+            })
+            return viewData
+        }))
+        return c.json({data:resViewList},200)
     }catch{
         return c.json({message:"server error"},500)
     }

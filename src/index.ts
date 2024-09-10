@@ -9,6 +9,7 @@ import gameRouter from "./Game/GameMain"
 import visitorRouter from "./Visitor/VisitorMain"
 import rankingRouter from "./Ranking/RankingMain"
 import { basicAuth } from 'hono/basic-auth'
+import { cors } from 'hono/cors'
 
 const app = new Hono()
 const DB_KEY = process.env.DB_KEY as string
@@ -20,6 +21,9 @@ mongoose.connect(DB_KEY).then(()=>{
 })
 
 app.use(prettyJSON())
+app.use("*",cors({
+  origin:['http://localhost:1212',"http://localhost:3000"]
+}))
 app.use("*",basicAuth({
   username:AUTH_NAME,
   password:AUTH_PASSWORD
@@ -31,7 +35,7 @@ app.route("/visitor",visitorRouter)
 app.route("/ranking",rankingRouter)
 
 app.get('/', (c) => {
-  return c.text("")
+  return c.text("test")
 })
 
 const port = 3000
