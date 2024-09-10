@@ -14,12 +14,10 @@ app.get("/get-all-ranking",async(c)=>{
 app.post("/get-genre-ranking",async(c)=>{
     try{
         const bodyData = await c.req.json<{genres:string[]}>()
-        let genreRankingList:any = []
-        bodyData.genres.forEach(async(i:string,index:number)=>{
+        const genreRankingList:any = await Promise.all(bodyData.genres.map(async(i:string,index:number)=>{
             const genreRanking = await LauncherGame.find({genre:i}).sort({counter:-1}).limit(3)
-            genreRankingList = [...genreRankingList,{i:genreRanking}]
-            console.log(genreRankingList)
-        })
+            return genreRanking
+        }))
         return c.json({data:genreRankingList})
     }catch(error){
         console.log(error)
