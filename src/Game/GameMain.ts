@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import LauncherGame, { gameInterfaceMain } from "../models/LauncherGame";
+import LauncherGame, { gameInterface, gameInterfaceMain } from "../models/LauncherGame";
 import fs from "fs"
 import { basicAuth } from "hono/basic-auth";
 const {v4:uuidv4} = require("uuid")
@@ -7,7 +7,7 @@ const app = new Hono()
 
 app.post("/set-new-game",async(c)=>{
     try{
-        const game = await c.req.json<gameInterfaceMain>()
+        const game = await c.req.json<{title:string,genre:string}>()
         const newGame = new LauncherGame({
             id:uuidv4(),
             title:game.title,
@@ -42,6 +42,14 @@ app.post("/set-all-game",async(c)=>{
         return c.json({message:"server error"},500)
     }
 })
+// app.delete("delete-all-game",async(c)=>{
+//     try{
+//         await LauncherGame.deleteMany({})
+//         return c.json({message:"done"},200)
+//     }catch{
+//         return c.json({message:"server error"},500)
+//     }
+// })
 
 app.post("/get-all-view-counter",async(c)=>{
     try{
