@@ -21,9 +21,7 @@ mongoose.connect(DB_KEY).then(()=>{
 })
 
 app.use(prettyJSON())
-app.use("*",cors({
-  origin:['http://localhost:1212',"http://localhost:3000"]
-}))
+app.use("*",cors())
 app.use("*",basicAuth({
   username:AUTH_NAME,
   password:AUTH_PASSWORD
