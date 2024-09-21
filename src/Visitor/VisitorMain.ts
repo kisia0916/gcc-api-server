@@ -17,6 +17,7 @@ app.post("/create-visitor-data",async(c)=>{
 })
 app.delete("/delete",async(c)=>{
     try{
+        console.log("test")
         await Counter.deleteOne({title:"main"})
         return c.json({data:"done"},200)
     }catch{}
