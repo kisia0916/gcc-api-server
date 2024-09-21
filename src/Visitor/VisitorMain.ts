@@ -15,13 +15,13 @@ app.post("/create-visitor-data",async(c)=>{
         return c.json({message:"server error"},500)
     }
 })
-app.delete("/delete",async(c)=>{
-    try{
-        console.log("test")
-        await Counter.deleteOne({title:"main"})
-        return c.json({data:"done"},200)
-    }catch{}
-})
+// app.delete("/delete",async(c)=>{
+//     try{
+//         console.log("test")
+//         await Counter.deleteOne({title:"main"})
+//         return c.json({data:"done"},200)
+//     }catch{}
+// })
 app.post("/get-visitor",async(c)=>{
     try{
         const bodyData = await c.req.json<{title:string}>()
