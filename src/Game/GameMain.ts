@@ -76,4 +76,13 @@ app.put("/add-view-counter",async(c)=>{
     }
 })
 
+app.put("/reset-all-view-counter",async(c)=>{
+    try{
+        await LauncherGame.updateMany({},{$set:{counter:0}})
+        return c.json({message:"done"},200)
+    }catch{
+        return c.json({message:"server error"},500)
+    }
+})
+
 export default app
