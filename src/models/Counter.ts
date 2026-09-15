@@ -17,8 +17,9 @@ const dbSchema:Schema = new Schema({
     },
     counter:{
         type:Number,
-        default:0
+        default:0,
+        min:0
     },
-})
+}, { timestamps: true })
 
 export default mongoose.model<CounterInterfaceMain>("Counter",dbSchema)
