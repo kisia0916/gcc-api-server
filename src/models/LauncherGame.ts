@@ -23,12 +23,13 @@ const dbSchema:Schema = new Schema({
     },
     counter:{
         type:Number,
-        default:0
+        default:0,
+        min:0
     },
     genre:{
         type:String,
         required:true,
     }
-})
+}, { timestamps: true })
 
 export default mongoose.model<gameInterfaceMain>("LauncherGame",dbSchema)

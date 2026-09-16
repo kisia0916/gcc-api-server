@@ -1,45 +1,61 @@
-import { serve } from '@hono/node-server'
-import { Hono } from 'hono'
-import dotenv from "dotenv"
-dotenv.config()
-import mongoose from 'mongoose'
-import { prettyJSON } from 'hono/pretty-json'
+import "dotenv/config"
+import { serve } from "@hono/node-server"
+import { Hono } from "hono"
+import { basicAuth } from "hono/basic-auth"
+import { cors } from "hono/cors"
+import mongoose from "mongoose"
+import gameRoutes from "./Game/GameMain"
+import rankingRoutes from "./Ranking/RankingMain"
+import visitorRoutes from "./Visitor/VisitorMain"
+import sessionRoutes from "./Session/SessionMain"
+import adminRoutes from "./Admin/AdminMain"
+import { errorResponse, successResponse } from "./http"
 
-import gameRouter from "./Game/GameMain"
-import visitorRouter from "./Visitor/VisitorMain"
-import rankingRouter from "./Ranking/RankingMain"
-import { basicAuth } from 'hono/basic-auth'
-import { cors } from 'hono/cors'
+const requiredEnvironmentValue = (name: "DB_KEY" | "AUTH_NAME" | "AUTH_PASSWORD") => {
+    const value = process.env[name]
+    if (!value) throw new Error(`Missing required environment variable: ${name}`)
+    return value
+}
 
-const app = new Hono()
-const DB_KEY = process.env.DB_KEY as string
-const AUTH_NAME = process.env.AUTH_NAME as string
-const AUTH_PASSWORD = process.env.AUTH_PASSWORD as string
+const start = async () => {
+    const databaseUrl = requiredEnvironmentValue("DB_KEY")
+    const authUser = requiredEnvironmentValue("AUTH_NAME")
+    const authPassword = requiredEnvironmentValue("AUTH_PASSWORD")
+    const port = Number(process.env.PORT ?? 3000)
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+        throw new Error(`Invalid PORT: ${process.env.PORT}`)
+    }
 
-mongoose.connect(DB_KEY).then(()=>{
-  console.log("connected DB!")
-})
+    await mongoose.connect(databaseUrl)
+    console.log("Connected to MongoDB")
 
-app.use(prettyJSON())
-app.use("*",cors())
-app.use("*",basicAuth({
-  username:AUTH_NAME,
-  password:AUTH_PASSWORD
-}))
-app.notFound((c)=>c.json({message:"not found"},404))
+    const app = new Hono()
+    app.use("*", cors())
+    app.use("*", basicAuth({ username: authUser, password: authPassword }))
+    app.onError((error, c) => {
+        console.error("Unhandled request error", error)
+        return errorResponse(c, 500, "INTERNAL_ERROR", "unexpected server error")
+    })
+    app.notFound((c) => errorResponse(c, 404, "NOT_FOUND", "route not found"))
 
-app.route("/game",gameRouter)
-app.route("/visitor",visitorRouter)
-app.route("/ranking",rankingRouter)
+    app.route("/ranking", rankingRoutes)
+    app.route("/game", gameRoutes)
+    app.route("/visitor", visitorRoutes)
+    app.route("/session", sessionRoutes)
+    app.route("/admin", adminRoutes)
+    app.get("/", (c) => successResponse(c, { service: "GCC Launcher API", year: 2026 }))
 
-app.get('/', (c) => {
-  return c.text("test")
-})
+    const server = serve({ fetch: app.fetch, port })
+    server.on("listening", () => {
+        console.log(`GCC Launcher API listening on port ${port}`)
+    })
+    server.on("error", (error) => {
+        console.error(`API server could not listen on port ${port}`, error)
+        process.exitCode = 1
+    })
+}
 
-const port = 3000
-console.log(`Server is running on port ${port}`)
-
-serve({
-  fetch: app.fetch,
-  port
+start().catch((error) => {
+    console.error("API server failed to start", error)
+    process.exitCode = 1
 })
