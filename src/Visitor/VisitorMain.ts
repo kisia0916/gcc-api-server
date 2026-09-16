@@ -50,11 +50,8 @@ app.put("/add-visitor", async (c) => {
         const visitor = await Counter.findOneAndUpdate(
             { title: body.title.trim() },
             { $inc: { counter: body.add } },
-            { new: true }
+            { new: true, upsert: true, setDefaultsOnInsert: true }
         ).lean()
-        if (!visitor) {
-            return errorResponse(c, 404, "NOT_FOUND", `visitor counter not found: ${body.title}`)
-        }
         return successResponse(c, { title: visitor.title, counter: visitor.counter })
     } catch (error) {
         console.error("Failed to increment visitor counter", error)
