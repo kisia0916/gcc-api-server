@@ -1,0 +1,17 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+node_modules
+dist
+coverage
+backups
+logs
+*.log
+npm-debug.log*
+Dockerfile*
+compose*.yaml
+compose*.yml
+README.md
+API.md

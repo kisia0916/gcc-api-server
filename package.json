@@ -1,8 +1,10 @@
 {
   "name": "gcc-launcher-api-2026",
   "scripts": {
+    "build": "tsc -p docker/tsconfig.build.json",
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
+    "start:prod": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "sync-catalog": "tsx src/syncCatalog.ts"
   },

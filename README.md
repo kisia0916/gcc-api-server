@@ -3,7 +3,123 @@
 文化祭ゲームランチャーのランキング、プレイ回数、来場者数をMongoDBへ保存する
 Hono APIです。
 
-## 起動
+## Dockerで起動
+
+API、MongoDB、永続ボリュームをDocker Composeでまとめて起動できます。
+
+### Ubuntu Serverで自動セットアップ・更新
+
+本番サーバーには、Docker公式の
+[Ubuntu向けDocker Engine導入手順](https://docs.docker.com/engine/install/ubuntu/)に従って
+Docker EngineとComposeプラグインをインストールしてください。DockerサービスをOS起動時に
+立ち上げるには次を実行します。
+
+```bash
+sudo systemctl enable --now docker
+docker info
+docker compose version
+```
+
+配布用 `bootstrap-gcc-api-server.sh` をサーバーへ置いた場合は、次の1回でリポジトリの
+clone、認証情報生成、外部DBボリューム作成、バックアップ設定、コンテナ起動を行えます。
+
+```bash
+chmod 700 bootstrap-gcc-api-server.sh
+./bootstrap-gcc-api-server.sh
+```
+
+リポジトリ取得後の更新には、リポジトリ内のスクリプトを使用します。
+
+```bash
+./docker/bootstrap.sh
+```
+
+スクリプトは、現在のユーザーが `docker info` を実行できる状態で実行してください。
+既定ではAPIとMongoDBを `127.0.0.1` にだけ公開します。外部のランチャーから接続する場合は、
+APIポートを直接インターネットへ開けず、HTTPS対応のリバースプロキシを前段に置いてください。
+
+### Windowsで自動セットアップ・更新
+
+リポジトリ取得前は配布用 `bootstrap-gcc-api-server.ps1` を任意のフォルダへ保存して
+実行します。取得後は同じ処理を `docker/bootstrap.ps1` から実行できます。
+
+- リポジトリがなければ `git clone`
+- すでにあれば `git pull --ff-only`
+- 初回のみランダムな認証情報を `.env` へ生成
+- Composeの管理外にあるMongoDB永続ボリュームを作成
+- API、MongoDB、日次バックアップを起動
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\docker\bootstrap.ps1
+```
+
+どちらのOSでも、ローカルの未コミット変更があり `git pull` できない場合、スクリプトは
+変更を上書きせず停止します。
+
+### 手動セットアップ
+
+Ubuntu Server:
+
+```bash
+cp docker/.env.example docker/.env
+install -d -m 700 backups
+docker volume create gcc-api-server-mongo-data
+docker compose --env-file docker/.env -f docker/compose.yaml up --build -d
+docker compose --env-file docker/.env -f docker/compose.yaml ps
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item docker/.env.example docker/.env
+New-Item -ItemType Directory -Force backups
+docker volume create gcc-api-server-mongo-data
+docker compose --env-file docker/.env -f docker/compose.yaml up --build -d
+docker compose --env-file docker/.env -f docker/compose.yaml ps
+```
+
+`docker/.env` の `MONGO_ROOT_USERNAME`、`MONGO_ROOT_PASSWORD`、`AUTH_NAME`、
+`AUTH_PASSWORD` を必ず設定してください。
+MongoDBの認証値にはURLで安全に扱える英数字、`_`、`-`を使用してください。
+
+既定ではAPIを `http://127.0.0.1:3000`、MongoDBを
+`mongodb://127.0.0.1:27017` でホストへ公開します。どちらも外部インターフェースには
+公開されません。APIコンテナはMongoDBのヘルスチェック完了後に起動し、DBデータは
+外部ボリューム `gcc-api-server-mongo-data` へ保存されます。このボリュームはComposeの
+管理外なので、`docker compose down -v` でも削除されず、OSやコンテナを再起動しても
+同じデータを使用します。
+
+`backup` コンテナは起動直後と24時間ごとに `mongodump` を実行し、既定では30日分の
+圧縮バックアップを `MONGO_BACKUP_DIRECTORY` へ保存します。間隔と保存期間は
+`docker/.env` の
+`MONGO_BACKUP_INTERVAL_SECONDS`、`MONGO_BACKUP_RETENTION_DAYS` で変更できます。
+
+起動確認には、Basic認証不要のヘルスチェックを使用できます。
+
+```bash
+curl --fail http://127.0.0.1:3000/health
+```
+
+同梱の `game_info.json` をMongoDBへ登録する場合は、`docker/.env` に設定したBasic認証で
+次を1回実行します。
+
+```bash
+curl --fail --user '<AUTH_NAME>:<AUTH_PASSWORD>' \
+  --request POST http://127.0.0.1:3000/game/set-all-game
+```
+
+停止時は次を実行します。外部DBボリュームとホスト側バックアップは残ります。
+
+```bash
+docker compose --env-file docker/.env -f docker/compose.yaml down
+```
+
+データを失わないため、`docker volume rm gcc-api-server-mongo-data` と
+`docker system prune --volumes` は実行しないでください。Dockerデータ領域の削除、
+ストレージ故障、サーバー故障には外部ボリュームだけでは耐えられないため、バックアップ先を
+別ディスクまたはクラウド同期対象にしてください。
+
+## ローカルで起動
 
 `.env` を作成します。
 

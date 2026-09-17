@@ -1,7 +1,7 @@
 # GCC Launcher API 2026
 
-全エンドポイントにHTTP Basic認証が必要です。ベースURLの既定値は
-`http://localhost:3000` で、`PORT` 環境変数から変更できます。
+`GET /health` を除く全エンドポイントにHTTP Basic認証が必要です。ベースURLの
+既定値は `http://localhost:3000` で、`PORT` 環境変数から変更できます。
 
 ## 共通レスポンス
 
@@ -39,6 +39,7 @@
 
 | Method | Path | 説明 |
 |---|---|---|
+| GET | `/health` | コンテナ・サービスの稼働確認（認証不要） |
 | GET | `/` | サービス情報 |
 | GET | `/ranking/get-all-ranking` | 全体ランキング上位15件 |
 | POST | `/ranking/get-genre-ranking` | `genres`ごとの上位3件 |

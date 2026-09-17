@@ -1,0 +1,90 @@
+name: gcc-api-server
+
+services:
+  mongo:
+    image: mongo:8.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?Set MONGO_ROOT_USERNAME in .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in .env}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-gcc-api}
+    ports:
+      - "${MONGO_BIND_ADDRESS:-127.0.0.1}:${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          mongosh --quiet --host 127.0.0.1 --port 27017
+          --username "$${MONGO_INITDB_ROOT_USERNAME}"
+          --password "$${MONGO_INITDB_ROOT_PASSWORD}"
+          --authenticationDatabase admin
+          --eval "quit(db.adminCommand('ping').ok ? 0 : 2)"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  api:
+    image: gcc-api-server:local
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      DB_KEY: >-
+        mongodb://${MONGO_ROOT_USERNAME:?Set MONGO_ROOT_USERNAME in .env}:${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in .env}@mongo:27017/${MONGO_DATABASE:-gcc-api}?authSource=admin
+      AUTH_NAME: ${AUTH_NAME:?Set AUTH_NAME in .env}
+      AUTH_PASSWORD: ${AUTH_PASSWORD:?Set AUTH_PASSWORD in .env}
+      PORT: 3000
+    ports:
+      - "${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-3000}:3000"
+
+  backup:
+    image: mongo:8.0
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      MONGO_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?Set MONGO_ROOT_USERNAME in .env}
+      MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in .env}
+      MONGO_DATABASE: ${MONGO_DATABASE:-gcc-api}
+      MONGO_BACKUP_INTERVAL_SECONDS: ${MONGO_BACKUP_INTERVAL_SECONDS:-86400}
+      MONGO_BACKUP_RETENTION_DAYS: ${MONGO_BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - type: bind
+        source: ${MONGO_BACKUP_DIRECTORY:?Set MONGO_BACKUP_DIRECTORY in .env}
+        target: /backups
+    command:
+      - /bin/sh
+      - -c
+      - |
+        umask 077
+        while true; do
+          timestamp=$$(date -u +%Y%m%dT%H%M%SZ)
+          archive="/backups/gcc-api-$${timestamp}.archive.gz"
+          if mongodump --host mongo --port 27017 \
+            --username "$${MONGO_ROOT_USERNAME}" \
+            --password "$${MONGO_ROOT_PASSWORD}" \
+            --authenticationDatabase admin \
+            --db "$${MONGO_DATABASE}" \
+            --archive="$${archive}" --gzip; then
+            echo "MongoDB backup created: $${archive}"
+            find /backups -type f -name 'gcc-api-*.archive.gz' \
+              -mtime +"$${MONGO_BACKUP_RETENTION_DAYS}" -delete
+          else
+            echo "MongoDB backup failed" >&2
+          fi
+          sleep "$${MONGO_BACKUP_INTERVAL_SECONDS}"
+        done
+
+volumes:
+  mongo-data:
+    name: ${MONGO_VOLUME_NAME:-gcc-api-server-mongo-data}
+    external: true

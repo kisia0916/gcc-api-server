@@ -10,6 +10,8 @@
 
 # deps
 node_modules/
+dist/
+backups/
 
 # env
 .env

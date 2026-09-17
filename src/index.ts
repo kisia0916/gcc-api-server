@@ -30,6 +30,7 @@ const start = async () => {
     console.log("Connected to MongoDB")
 
     const app = new Hono()
+    app.get("/health", (c) => successResponse(c, { status: "ok" }))
     app.use("*", cors())
     app.use("*", basicAuth({ username: authUser, password: authPassword }))
     app.onError((error, c) => {
