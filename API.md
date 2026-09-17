@@ -44,7 +44,7 @@
 | GET | `/ranking/get-all-ranking` | 全体ランキング上位15件 |
 | POST | `/ranking/get-genre-ranking` | `genres`ごとの上位3件 |
 | POST | `/game/set-new-game` | `{title, genre}`を新規登録 |
-| POST | `/game/set-all-game` | `game_info.json`を検証してupsert同期 |
+| POST | `/game/set-all-game` | `docker/game_info.json`から未登録ゲームだけを追加 |
 | POST | `/game/get-all-view-counter` | `genres`ごとのカウンター一覧 |
 | PUT | `/game/add-view-counter` | `{title}`のカウンターを1増加 |
 | PUT | `/game/reset-all-view-counter` | 全ゲームのカウンターを0へ戻す |
@@ -79,9 +79,11 @@ curl -u "user:password" \
 
 ## カタログ同期
 
-`POST /game/set-all-game` はサーバールートの `game_info.json` を読みます。
+APIは起動時に `docker/game_info.json` を読み込みます。`POST /game/set-all-game` でも
+同じ同期を手動実行できます。
 `genres`に列挙された各配列のみを対象とし、必須項目とタイトル重複を先に検証します。
-検証に失敗した場合はDBを更新せず、400で問題箇所を返します。
+起動時の検証に失敗した場合はサーバーを開始せず、手動APIではDBを更新せず400で
+問題箇所を返します。
 
 成功例:
 
@@ -91,11 +93,11 @@ curl -u "user:password" \
   "data": {
     "total": 56,
     "inserted": 3,
-    "updated": 1,
-    "matched": 52
+    "existing": 53
   }
 }
 ```
 
-既存タイトルはジャンルだけを更新し、IDとカウンターを維持します。新規タイトルには
-UUIDとカウンター0を設定します。カタログから消えたゲームのDBレコードは自動削除しません。
+既存タイトルのレコードはジャンル、ID、カウンター、更新日時を含め一切変更しません。
+新規タイトルだけにUUIDとカウンター0を設定します。カタログから消えたゲームのDBレコードも
+自動削除しません。

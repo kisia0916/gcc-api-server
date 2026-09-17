@@ -25,7 +25,7 @@ WORKDIR /app
 COPY --chown=node:node package.json package-lock.json ./
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
-COPY --chown=node:node game_info.json ./game_info.json
+COPY --chown=node:node docker/game_info.json ./docker/game_info.json
 
 USER node
 

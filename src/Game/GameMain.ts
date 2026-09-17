@@ -1,9 +1,8 @@
 import { randomUUID } from "node:crypto"
-import fs from "node:fs"
-import path from "node:path"
 import { Hono } from "hono"
 import LauncherGame from "../models/LauncherGame"
 import { errorResponse, isNonEmptyString, parseJson, successResponse } from "../http"
+import { CatalogValidationError, syncGameCatalog } from "../catalog"
 
 const app = new Hono()
 
@@ -40,67 +39,11 @@ app.post("/set-new-game", async (c) => {
 
 app.post("/set-all-game", async (c) => {
     try {
-        const catalogPath = path.resolve(process.cwd(), "game_info.json")
-        if (!fs.existsSync(catalogPath)) {
-            return errorResponse(c, 500, "INTERNAL_ERROR", "game_info.json was not found")
-        }
-
-        const gameInfo = JSON.parse(fs.readFileSync(catalogPath, "utf-8")) as Record<string, unknown>
-        const genres = Array.isArray(gameInfo.genres)
-            ? gameInfo.genres.filter(isNonEmptyString)
-            : []
-        if (genres.length === 0) {
-            return errorResponse(c, 400, "BAD_REQUEST", "catalog has no genres")
-        }
-
-        const games: GameInput[] = []
-        const invalidEntries: string[] = []
-        for (const genre of genres) {
-            const entries = gameInfo[genre]
-            if (!Array.isArray(entries)) {
-                invalidEntries.push(`${genre}: game list is missing`)
-                continue
-            }
-            entries.forEach((entry, index) => {
-                if (!validateGame(entry)) {
-                    invalidEntries.push(`${genre}[${index}]: title or genre is invalid`)
-                    return
-                }
-                games.push({ title: entry.title.trim(), genre: entry.genre.trim() })
-            })
-        }
-
-        const duplicateTitles = games
-            .map((game) => game.title)
-            .filter((title, index, titles) => titles.indexOf(title) !== index)
-        if (invalidEntries.length > 0 || duplicateTitles.length > 0) {
-            return errorResponse(c, 400, "BAD_REQUEST", "catalog validation failed", {
-                invalidEntries,
-                duplicateTitles: [...new Set(duplicateTitles)]
-            })
-        }
-        if (games.length === 0) {
-            return errorResponse(c, 400, "BAD_REQUEST", "catalog has no games")
-        }
-
-        const result = await LauncherGame.bulkWrite(games.map((game) => ({
-            updateOne: {
-                filter: { title: game.title },
-                update: {
-                    $set: { genre: game.genre },
-                    $setOnInsert: { id: randomUUID(), counter: 0 }
-                },
-                upsert: true
-            }
-        })), { ordered: false })
-
-        return successResponse(c, {
-            total: games.length,
-            inserted: result.upsertedCount,
-            updated: result.modifiedCount,
-            matched: result.matchedCount
-        })
+        return successResponse(c, await syncGameCatalog())
     } catch (error) {
+        if (error instanceof CatalogValidationError) {
+            return errorResponse(c, 400, "BAD_REQUEST", error.message, error.details)
+        }
         console.error("Failed to synchronize game catalog", error)
         return errorResponse(c, 500, "INTERNAL_ERROR", "failed to synchronize game catalog")
     }

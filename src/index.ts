@@ -10,6 +10,7 @@ import visitorRoutes from "./Visitor/VisitorMain"
 import sessionRoutes from "./Session/SessionMain"
 import adminRoutes from "./Admin/AdminMain"
 import { errorResponse, successResponse } from "./http"
+import { resolveGameCatalogPath, syncGameCatalog } from "./catalog"
 
 const requiredEnvironmentValue = (name: "DB_KEY" | "AUTH_NAME" | "AUTH_PASSWORD") => {
     const value = process.env[name]
@@ -28,6 +29,13 @@ const start = async () => {
 
     await mongoose.connect(databaseUrl)
     console.log("Connected to MongoDB")
+
+    const catalogPath = resolveGameCatalogPath()
+    const catalogResult = await syncGameCatalog(catalogPath)
+    console.log(
+        `Synchronized game catalog from ${catalogPath}: ` +
+        `${catalogResult.inserted} inserted, ${catalogResult.existing} existing`
+    )
 
     const app = new Hono()
     app.get("/health", (c) => successResponse(c, { status: "ok" }))

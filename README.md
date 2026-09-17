@@ -101,8 +101,10 @@ MongoDBの認証値にはURLで安全に扱える英数字、`_`、`-`を使用�
 curl --fail http://127.0.0.1:5555/health
 ```
 
-同梱の `game_info.json` をMongoDBへ登録する場合は、`docker/.env` に設定したBasic認証で
-次を1回実行します。
+APIコンテナは起動するたびに `docker/game_info.json` を読み込みます。タイトルがDBに
+存在しないゲームだけを追加し、既存ゲームのID、ジャンル、閲覧数などは変更しません。
+カタログから消えたゲームもDBから削除しません。手動で再同期する場合は、
+`docker/.env` に設定したBasic認証で次を実行できます。
 
 ```bash
 curl --fail --user '<AUTH_NAME>:<AUTH_PASSWORD>' \
@@ -137,8 +139,9 @@ npm run typecheck
 npm run dev
 ```
 
-サーバーはMongoDBへの接続が完了してから待ち受けを開始します。必須環境変数、
-MongoDB接続、またはポート指定に問題がある場合は、理由を標準エラーへ出して終了します。
+サーバーはMongoDBへの接続と `docker/game_info.json` の同期が完了してから待ち受けを
+開始します。必須環境変数、MongoDB接続、カタログ、またはポート指定に問題がある場合は、
+理由を標準エラーへ出して終了します。
 
 詳しいレスポンス形式は [API.md](./API.md) を参照。
 
@@ -151,5 +154,11 @@ MongoDB接続、またはポート指定に問題がある場合は、理由を�
 npm run sync-catalog -- ../path-to-launcher/game_info.json
 ```
 
-変換後に `POST /game/set-all-game` を呼ぶと、既存カウンターを維持してDBへ
-追加・更新されます。
+変換結果は `docker/game_info.json` へ保存されます。DockerではこのファイルをAPIコンテナへ
+読み取り専用でマウントしているため、変換後にAPIを再起動すると未登録ゲームだけが追加されます。
+
+```bash
+docker compose --env-file docker/.env -f docker/compose.yaml restart api
+```
+
+既存タイトルのDBレコードと閲覧数は上書きされません。

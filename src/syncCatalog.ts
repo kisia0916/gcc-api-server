@@ -8,7 +8,7 @@ if (!sourceArgument) {
 }
 
 const sourcePath = path.resolve(sourceArgument)
-const outputPath = path.resolve(process.cwd(), "game_info.json")
+const outputPath = path.resolve(process.cwd(), "docker", "game_info.json")
 const source = JSON.parse(fs.readFileSync(sourcePath, "utf-8")) as Record<string, unknown>
 const genres = Array.isArray(source.genres) ? source.genres.filter(isNonEmptyString) : []
 if (genres.length === 0) throw new Error("The launcher catalog has no genres")
