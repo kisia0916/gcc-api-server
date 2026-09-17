@@ -44,7 +44,7 @@ services:
       GAME_CATALOG_PATH: /app/docker/game_info.json
       PORT: 5555
     ports:
-      - "${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-5555}:5555"
+      - "${API_BIND_ADDRESS:-0.0.0.0}:${API_PORT:-5555}:5555"
     volumes:
       - type: bind
         source: ./game_info.json

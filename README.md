@@ -36,8 +36,9 @@ chmod 700 bootstrap-gcc-api-server.sh
 
 スクリプトは、現在のユーザーが `docker info` を実行できる状態で実行してください。
 以前の自動設定で `API_PORT=3000` になっている場合も、再実行時に `5555` へ更新します。
-既定ではAPIとMongoDBを `127.0.0.1` にだけ公開します。外部のランチャーから接続する場合は、
-APIポートを直接インターネットへ開けず、HTTPS対応のリバースプロキシを前段に置いてください。
+既定ではAPIを `0.0.0.0:5555` でLANから接続可能にし、MongoDBは `127.0.0.1` にだけ
+公開します。APIポートをインターネットへ直接開けず、公開が必要な場合はHTTPS対応の
+リバースプロキシを前段に置いてください。
 
 ### Windowsで自動セットアップ・更新
 
@@ -83,9 +84,11 @@ docker compose --env-file docker/.env -f docker/compose.yaml ps
 `AUTH_PASSWORD` を必ず設定してください。
 MongoDBの認証値にはURLで安全に扱える英数字、`_`、`-`を使用してください。
 
-既定ではAPIを `http://127.0.0.1:5555`、MongoDBを
-`mongodb://127.0.0.1:27017` でホストへ公開します。どちらも外部インターフェースには
-公開されません。APIコンテナはMongoDBのヘルスチェック完了後に起動し、DBデータは
+既定ではAPIをホストの全インターフェースのポート `5555`、MongoDBを
+`mongodb://127.0.0.1:27017` でホストへ公開します。LAN内の端末は
+`http://<Ubuntu ServerのLAN内IP>:5555` でAPIへ接続できます。既存の `docker/.env` は
+自動上書きしないため、以前にセットアップ済みの場合は `API_BIND_ADDRESS=0.0.0.0` へ
+変更してください。APIコンテナはMongoDBのヘルスチェック完了後に起動し、DBデータは
 外部ボリューム `gcc-api-server-mongo-data` へ保存されます。このボリュームはComposeの
 管理外なので、`docker compose down -v` でも削除されず、OSやコンテナを再起動しても
 同じデータを使用します。

@@ -85,7 +85,7 @@ if [[ ! -f "$env_file" ]]; then
             'AUTH_NAME=launcher' \
             "AUTH_PASSWORD=$api_password" \
             '' \
-            'API_BIND_ADDRESS=127.0.0.1' \
+            'API_BIND_ADDRESS=0.0.0.0' \
             'API_PORT=5555' \
             'MONGO_BIND_ADDRESS=127.0.0.1' \
             'MONGO_PORT=27017'
