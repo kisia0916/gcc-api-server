@@ -21,7 +21,7 @@ const start = async () => {
     const databaseUrl = requiredEnvironmentValue("DB_KEY")
     const authUser = requiredEnvironmentValue("AUTH_NAME")
     const authPassword = requiredEnvironmentValue("AUTH_PASSWORD")
-    const port = Number(process.env.PORT ?? 3000)
+    const port = Number(process.env.PORT ?? 5555)
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
         throw new Error(`Invalid PORT: ${process.env.PORT}`)
     }

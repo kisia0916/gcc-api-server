@@ -86,14 +86,20 @@ if [[ ! -f "$env_file" ]]; then
             "AUTH_PASSWORD=$api_password" \
             '' \
             'API_BIND_ADDRESS=127.0.0.1' \
-            'API_PORT=3000' \
+            'API_PORT=5555' \
             'MONGO_BIND_ADDRESS=127.0.0.1' \
             'MONGO_PORT=27017'
     } > "$env_file"
     chmod 600 "$env_file"
     echo "Created secure credentials in $env_file"
-elif ! grep -q '^MONGO_BACKUP_DIRECTORY=' "$env_file"; then
-    printf '\nMONGO_BACKUP_DIRECTORY=%s\n' "$backup_directory" >> "$env_file"
+else
+    if ! grep -q '^MONGO_BACKUP_DIRECTORY=' "$env_file"; then
+        printf '\nMONGO_BACKUP_DIRECTORY=%s\n' "$backup_directory" >> "$env_file"
+    fi
+    if grep -q '^API_PORT=3000$' "$env_file"; then
+        sed -i 's/^API_PORT=3000$/API_PORT=5555/' "$env_file"
+        echo "Updated API_PORT from 3000 to 5555 in $env_file"
+    fi
 fi
 
 volume_name="$(sed -n 's/^MONGO_VOLUME_NAME=//p' "$env_file" | head -n 1)"

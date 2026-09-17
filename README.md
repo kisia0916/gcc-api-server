@@ -35,6 +35,7 @@ chmod 700 bootstrap-gcc-api-server.sh
 ```
 
 スクリプトは、現在のユーザーが `docker info` を実行できる状態で実行してください。
+以前の自動設定で `API_PORT=3000` になっている場合も、再実行時に `5555` へ更新します。
 既定ではAPIとMongoDBを `127.0.0.1` にだけ公開します。外部のランチャーから接続する場合は、
 APIポートを直接インターネットへ開けず、HTTPS対応のリバースプロキシを前段に置いてください。
 
@@ -82,7 +83,7 @@ docker compose --env-file docker/.env -f docker/compose.yaml ps
 `AUTH_PASSWORD` を必ず設定してください。
 MongoDBの認証値にはURLで安全に扱える英数字、`_`、`-`を使用してください。
 
-既定ではAPIを `http://127.0.0.1:3000`、MongoDBを
+既定ではAPIを `http://127.0.0.1:5555`、MongoDBを
 `mongodb://127.0.0.1:27017` でホストへ公開します。どちらも外部インターフェースには
 公開されません。APIコンテナはMongoDBのヘルスチェック完了後に起動し、DBデータは
 外部ボリューム `gcc-api-server-mongo-data` へ保存されます。このボリュームはComposeの
@@ -97,7 +98,7 @@ MongoDBの認証値にはURLで安全に扱える英数字、`_`、`-`を使用�
 起動確認には、Basic認証不要のヘルスチェックを使用できます。
 
 ```bash
-curl --fail http://127.0.0.1:3000/health
+curl --fail http://127.0.0.1:5555/health
 ```
 
 同梱の `game_info.json` をMongoDBへ登録する場合は、`docker/.env` に設定したBasic認証で
@@ -105,7 +106,7 @@ curl --fail http://127.0.0.1:3000/health
 
 ```bash
 curl --fail --user '<AUTH_NAME>:<AUTH_PASSWORD>' \
-  --request POST http://127.0.0.1:3000/game/set-all-game
+  --request POST http://127.0.0.1:5555/game/set-all-game
 ```
 
 停止時は次を実行します。外部DBボリュームとホスト側バックアップは残ります。
@@ -127,7 +128,7 @@ docker compose --env-file docker/.env -f docker/compose.yaml down
 DB_KEY=mongodb://127.0.0.1:27017/gcc-api
 AUTH_NAME=your-username
 AUTH_PASSWORD=your-password
-PORT=3000
+PORT=5555
 ```
 
 ```powershell

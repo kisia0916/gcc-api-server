@@ -1,7 +1,7 @@
 # GCC Launcher API 2026
 
 `GET /health` を除く全エンドポイントにHTTP Basic認証が必要です。ベースURLの
-既定値は `http://localhost:3000` で、`PORT` 環境変数から変更できます。
+既定値は `http://localhost:5555` で、`PORT` 環境変数から変更できます。
 
 ## 共通レスポンス
 
@@ -72,7 +72,7 @@ curl -u "user:password" \
   -X PUT \
   -H "Content-Type: application/json" \
   -d '{"durationSeconds":300}' \
-  http://localhost:3000/session/settings
+  http://localhost:5555/session/settings
 ```
 
 設定可能範囲は30〜3600秒です。未設定時は360秒で自動作成されます。

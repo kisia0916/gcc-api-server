@@ -41,9 +41,9 @@ services:
         mongodb://${MONGO_ROOT_USERNAME:?Set MONGO_ROOT_USERNAME in .env}:${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in .env}@mongo:27017/${MONGO_DATABASE:-gcc-api}?authSource=admin
       AUTH_NAME: ${AUTH_NAME:?Set AUTH_NAME in .env}
       AUTH_PASSWORD: ${AUTH_PASSWORD:?Set AUTH_PASSWORD in .env}
-      PORT: 3000
+      PORT: 5555
     ports:
-      - "${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-3000}:3000"
+      - "${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-5555}:5555"
 
   backup:
     image: mongo:8.0

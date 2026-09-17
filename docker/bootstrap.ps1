@@ -96,7 +96,7 @@ if (-not (Test-Path -LiteralPath $envPath)) {
         "AUTH_PASSWORD=$(New-UrlSafeSecret)",
         '',
         'API_BIND_ADDRESS=127.0.0.1',
-        'API_PORT=3000',
+        'API_PORT=5555',
         'MONGO_BIND_ADDRESS=127.0.0.1',
         'MONGO_PORT=27017'
     )
@@ -104,6 +104,16 @@ if (-not (Test-Path -LiteralPath $envPath)) {
     Write-Host "Created secure credentials in $envPath"
 } else {
     $envText = [IO.File]::ReadAllText($envPath)
+    $updatedEnvText = [Text.RegularExpressions.Regex]::Replace(
+        $envText,
+        '(?m)^API_PORT=3000(?=\r?$)',
+        'API_PORT=5555'
+    )
+    if ($updatedEnvText -ne $envText) {
+        [IO.File]::WriteAllText($envPath, $updatedEnvText, [Text.UTF8Encoding]::new($false))
+        $envText = $updatedEnvText
+        Write-Host "Updated API_PORT from 3000 to 5555 in $envPath"
+    }
     if ($envText -notmatch '(?m)^MONGO_BACKUP_DIRECTORY=') {
         [IO.File]::AppendAllText(
             $envPath,
